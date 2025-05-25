@@ -59,4 +59,4 @@ model Session {
 
   @@index([userId])
   @@index([token])
-} 
+}
