@@ -1,38 +1,54 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users, Key, UserCheck, Calendar } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 
-async function getStats() {
-  try {
-    // Dynamic import of Prisma
-    const { PrismaClient } = await import("@prisma/client")
-    const prisma = new PrismaClient()
-
-    try {
-      const [totalUsers, totalLicenses, activeLicenses, recentUsers] = await Promise.all([
-        prisma.user.count(),
-        prisma.license.count(),
-        prisma.license.count({ where: { status: "ACTIVE" } }),
-        prisma.user.count({
-          where: {
-            createdAt: {
-              gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
-            },
-          },
-        }),
-      ])
-
-      return { totalUsers, totalLicenses, activeLicenses, recentUsers }
-    } finally {
-      await prisma.$disconnect()
-    }
-  } catch (error) {
-    console.error("Error fetching stats:", error)
-    return { totalUsers: 0, totalLicenses: 0, activeLicenses: 0, recentUsers: 0 }
-  }
+interface Stats {
+  totalUsers: number
+  totalLicenses: number
+  activeLicenses: number
+  recentUsers: number
 }
 
-export default async function AdminDashboard() {
-  const stats = await getStats()
+export default function AdminDashboard() {
+  const [stats, setStats] = useState<Stats>({
+    totalUsers: 0,
+    totalLicenses: 0,
+    activeLicenses: 0,
+    recentUsers: 0,
+  })
+  const [loading, setLoading] = useState(true)
+  const { toast } = useToast()
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const response = await fetch("/api/admin/stats")
+        if (response.ok) {
+          const data = await response.json()
+          setStats(data.stats)
+        } else {
+          toast({
+            title: "Lỗi",
+            description: "Không thể tải thống kê",
+            variant: "destructive",
+          })
+        }
+      } catch (error) {
+        toast({
+          title: "Lỗi",
+          description: "Có lỗi xảy ra khi tải dữ liệu",
+          variant: "destructive",
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchStats()
+  }, [toast])
 
   const statCards = [
     {
@@ -60,6 +76,26 @@ export default async function AdminDashboard() {
       description: "Người dùng đăng ký trong 7 ngày qua",
     },
   ]
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">Đang tải dữ liệu...</p>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {[1, 2, 3, 4].map((i) => (
+            <Card key={i}>
+              <CardContent className="p-6">
+                <div className="text-center">Đang tải...</div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8">
