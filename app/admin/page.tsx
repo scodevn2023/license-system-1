@@ -1,22 +1,34 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { prisma } from "@/lib/db"
 import { Users, Key, UserCheck, Calendar } from "lucide-react"
 
 async function getStats() {
-  const [totalUsers, totalLicenses, activeLicenses, recentUsers] = await Promise.all([
-    prisma.user.count(),
-    prisma.license.count(),
-    prisma.license.count({ where: { status: "ACTIVE" } }),
-    prisma.user.count({
-      where: {
-        createdAt: {
-          gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
-        },
-      },
-    }),
-  ])
+  try {
+    // Dynamic import of Prisma
+    const { PrismaClient } = await import("@prisma/client")
+    const prisma = new PrismaClient()
 
-  return { totalUsers, totalLicenses, activeLicenses, recentUsers }
+    try {
+      const [totalUsers, totalLicenses, activeLicenses, recentUsers] = await Promise.all([
+        prisma.user.count(),
+        prisma.license.count(),
+        prisma.license.count({ where: { status: "ACTIVE" } }),
+        prisma.user.count({
+          where: {
+            createdAt: {
+              gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
+            },
+          },
+        }),
+      ])
+
+      return { totalUsers, totalLicenses, activeLicenses, recentUsers }
+    } finally {
+      await prisma.$disconnect()
+    }
+  } catch (error) {
+    console.error("Error fetching stats:", error)
+    return { totalUsers: 0, totalLicenses: 0, activeLicenses: 0, recentUsers: 0 }
+  }
 }
 
 export default async function AdminDashboard() {

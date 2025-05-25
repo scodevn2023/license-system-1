@@ -1,5 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/db"
 import { requireAdmin } from "@/lib/auth"
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
@@ -13,62 +12,70 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
       return NextResponse.json({ error: "Thiếu thông tin bắt buộc" }, { status: 400 })
     }
 
-    // Check if license exists
-    const existingLicense = await prisma.license.findUnique({
-      where: { id: licenseId },
-    })
+    // Dynamic import of Prisma
+    const { PrismaClient } = await import("@prisma/client")
+    const prisma = new PrismaClient()
 
-    if (!existingLicense) {
-      return NextResponse.json({ error: "License không tồn tại" }, { status: 404 })
-    }
+    try {
+      // Check if license exists
+      const existingLicense = await prisma.license.findUnique({
+        where: { id: licenseId },
+      })
 
-    // Check if license key is already used by another license
-    const keyLicense = await prisma.license.findUnique({
-      where: { key },
-    })
+      if (!existingLicense) {
+        return NextResponse.json({ error: "License không tồn tại" }, { status: 404 })
+      }
 
-    if (keyLicense && keyLicense.id !== licenseId) {
-      return NextResponse.json({ error: "License key này đã được sử dụng" }, { status: 409 })
-    }
+      // Check if license key is already used by another license
+      const keyLicense = await prisma.license.findUnique({
+        where: { key },
+      })
 
-    // Check if user exists
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-    })
+      if (keyLicense && keyLicense.id !== licenseId) {
+        return NextResponse.json({ error: "License key này đã được sử dụng" }, { status: 409 })
+      }
 
-    if (!user) {
-      return NextResponse.json({ error: "User không tồn tại" }, { status: 404 })
-    }
+      // Check if user exists
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+      })
 
-    // Update license
-    const license = await prisma.license.update({
-      where: { id: licenseId },
-      data: {
-        key,
-        type,
-        status,
-        userId,
-        expirationDate: new Date(expirationDate),
-        notes: notes || null,
-        hardwareId: hardwareId || null,
-        // Update activatedAt if status changes to ACTIVE
-        activatedAt:
-          status === "ACTIVE" && existingLicense.status !== "ACTIVE" ? new Date() : existingLicense.activatedAt,
-      },
-      include: {
-        user: {
-          select: { id: true, name: true, email: true },
+      if (!user) {
+        return NextResponse.json({ error: "User không tồn tại" }, { status: 404 })
+      }
+
+      // Update license
+      const license = await prisma.license.update({
+        where: { id: licenseId },
+        data: {
+          key,
+          type,
+          status,
+          userId,
+          expirationDate: new Date(expirationDate),
+          notes: notes || null,
+          hardwareId: hardwareId || null,
+          // Update activatedAt if status changes to ACTIVE
+          activatedAt:
+            status === "ACTIVE" && existingLicense.status !== "ACTIVE" ? new Date() : existingLicense.activatedAt,
         },
-        creator: {
-          select: { name: true, email: true },
+        include: {
+          user: {
+            select: { id: true, name: true, email: true },
+          },
+          creator: {
+            select: { name: true, email: true },
+          },
         },
-      },
-    })
+      })
 
-    return NextResponse.json({
-      success: true,
-      license,
-    })
+      return NextResponse.json({
+        success: true,
+        license,
+      })
+    } finally {
+      await prisma.$disconnect()
+    }
   } catch (error) {
     console.error("Update license error:", error)
     return NextResponse.json({ error: "Lỗi server" }, { status: 500 })
@@ -81,24 +88,32 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
     const licenseId = params.id
 
-    // Check if license exists
-    const existingLicense = await prisma.license.findUnique({
-      where: { id: licenseId },
-    })
+    // Dynamic import of Prisma
+    const { PrismaClient } = await import("@prisma/client")
+    const prisma = new PrismaClient()
 
-    if (!existingLicense) {
-      return NextResponse.json({ error: "License không tồn tại" }, { status: 404 })
+    try {
+      // Check if license exists
+      const existingLicense = await prisma.license.findUnique({
+        where: { id: licenseId },
+      })
+
+      if (!existingLicense) {
+        return NextResponse.json({ error: "License không tồn tại" }, { status: 404 })
+      }
+
+      // Delete license
+      await prisma.license.delete({
+        where: { id: licenseId },
+      })
+
+      return NextResponse.json({
+        success: true,
+        message: "License đã được xóa thành công",
+      })
+    } finally {
+      await prisma.$disconnect()
     }
-
-    // Delete license
-    await prisma.license.delete({
-      where: { id: licenseId },
-    })
-
-    return NextResponse.json({
-      success: true,
-      message: "License đã được xóa thành công",
-    })
   } catch (error) {
     console.error("Delete license error:", error)
     return NextResponse.json({ error: "Lỗi server" }, { status: 500 })

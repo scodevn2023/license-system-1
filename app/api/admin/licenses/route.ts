@@ -1,5 +1,4 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/db"
 import { requireAdmin } from "@/lib/auth"
 
 export async function POST(request: NextRequest) {
@@ -12,49 +11,57 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Thiếu thông tin bắt buộc" }, { status: 400 })
     }
 
-    // Check if license key already exists
-    const existingLicense = await prisma.license.findUnique({
-      where: { key },
-    })
+    // Dynamic import of Prisma
+    const { PrismaClient } = await import("@prisma/client")
+    const prisma = new PrismaClient()
 
-    if (existingLicense) {
-      return NextResponse.json({ error: "License key này đã tồn tại" }, { status: 409 })
-    }
+    try {
+      // Check if license key already exists
+      const existingLicense = await prisma.license.findUnique({
+        where: { key },
+      })
 
-    // Check if user exists
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-    })
+      if (existingLicense) {
+        return NextResponse.json({ error: "License key này đã tồn tại" }, { status: 409 })
+      }
 
-    if (!user) {
-      return NextResponse.json({ error: "User không tồn tại" }, { status: 404 })
-    }
+      // Check if user exists
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+      })
 
-    // Create license
-    const license = await prisma.license.create({
-      data: {
-        key,
-        type,
-        userId,
-        creatorId: admin.id,
-        expirationDate: new Date(expirationDate),
-        notes: notes || null,
-        status: "PENDING",
-      },
-      include: {
-        user: {
-          select: { id: true, name: true, email: true },
+      if (!user) {
+        return NextResponse.json({ error: "User không tồn tại" }, { status: 404 })
+      }
+
+      // Create license
+      const license = await prisma.license.create({
+        data: {
+          key,
+          type,
+          userId,
+          creatorId: admin.id,
+          expirationDate: new Date(expirationDate),
+          notes: notes || null,
+          status: "PENDING",
         },
-        creator: {
-          select: { name: true, email: true },
+        include: {
+          user: {
+            select: { id: true, name: true, email: true },
+          },
+          creator: {
+            select: { name: true, email: true },
+          },
         },
-      },
-    })
+      })
 
-    return NextResponse.json({
-      success: true,
-      license,
-    })
+      return NextResponse.json({
+        success: true,
+        license,
+      })
+    } finally {
+      await prisma.$disconnect()
+    }
   } catch (error) {
     console.error("Create license error:", error)
     return NextResponse.json({ error: "Lỗi server" }, { status: 500 })

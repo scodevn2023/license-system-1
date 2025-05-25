@@ -1,6 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
-import { prisma } from "@/lib/db"
 import { requireAdmin } from "@/lib/auth"
 
 export async function POST(request: NextRequest) {
@@ -13,34 +12,42 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Email và password là bắt buộc" }, { status: 400 })
     }
 
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    })
+    // Dynamic import of Prisma
+    const { PrismaClient } = await import("@prisma/client")
+    const prisma = new PrismaClient()
 
-    if (existingUser) {
-      return NextResponse.json({ error: "Email này đã được sử dụng" }, { status: 409 })
+    try {
+      // Check if user already exists
+      const existingUser = await prisma.user.findUnique({
+        where: { email },
+      })
+
+      if (existingUser) {
+        return NextResponse.json({ error: "Email này đã được sử dụng" }, { status: 409 })
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 12)
+
+      // Create user
+      const user = await prisma.user.create({
+        data: {
+          email,
+          password: hashedPassword,
+          name: name || null,
+          role: role || "USER",
+        },
+      })
+
+      const { password: _, ...userWithoutPassword } = user
+
+      return NextResponse.json({
+        success: true,
+        user: userWithoutPassword,
+      })
+    } finally {
+      await prisma.$disconnect()
     }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 12)
-
-    // Create user
-    const user = await prisma.user.create({
-      data: {
-        email,
-        password: hashedPassword,
-        name: name || null,
-        role: role || "USER",
-      },
-    })
-
-    const { password: _, ...userWithoutPassword } = user
-
-    return NextResponse.json({
-      success: true,
-      user: userWithoutPassword,
-    })
   } catch (error) {
     console.error("Create user error:", error)
     return NextResponse.json({ error: "Lỗi server" }, { status: 500 })
