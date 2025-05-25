@@ -5,26 +5,32 @@ export async function GET() {
   try {
     await requireAdmin()
 
-    const { prisma } = await import("@/lib/db")
+    // Dynamic import of Prisma
+    const { PrismaClient } = await import("@prisma/client")
+    const prisma = new PrismaClient()
 
-    const licenses = await prisma.license.findMany({
-      include: {
-        user: {
-          select: { id: true, name: true, email: true },
+    try {
+      const licenses = await prisma.license.findMany({
+        include: {
+          user: {
+            select: { id: true, name: true, email: true },
+          },
+          creator: {
+            select: { name: true, email: true },
+          },
         },
-        creator: {
-          select: { name: true, email: true },
+        orderBy: {
+          createdAt: "desc",
         },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    })
+      })
 
-    return NextResponse.json({
-      success: true,
-      licenses,
-    })
+      return NextResponse.json({
+        success: true,
+        licenses,
+      })
+    } finally {
+      await prisma.$disconnect()
+    }
   } catch (error) {
     console.error("Get licenses error:", error)
     return NextResponse.json({ error: "Lỗi server" }, { status: 500 })
