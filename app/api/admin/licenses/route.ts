@@ -1,6 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/auth"
-import { prisma } from "@/lib/db"
 
 export async function POST(request: NextRequest) {
   try {
@@ -11,6 +10,8 @@ export async function POST(request: NextRequest) {
     if (!key || !type || !userId || !expirationDate) {
       return NextResponse.json({ error: "Thiếu thông tin bắt buộc" }, { status: 400 })
     }
+
+    const { prisma } = await import("@/lib/db")
 
     // Check if license key already exists
     const existingLicense = await prisma.license.findUnique({

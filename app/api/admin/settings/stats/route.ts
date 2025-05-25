@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/auth"
-import { prisma } from "@/lib/db"
 
 export async function GET() {
   try {
     await requireAdmin()
+
+    const { prisma } = await import("@/lib/db")
 
     const [totalUsers, totalLicenses, activeLicenses, expiredLicenses, totalSessions, activeSessions] =
       await Promise.all([

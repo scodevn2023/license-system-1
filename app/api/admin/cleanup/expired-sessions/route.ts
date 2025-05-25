@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/auth"
-import { prisma } from "@/lib/db"
 
 export async function POST() {
   try {
     await requireAdmin()
+
+    const { prisma } = await import("@/lib/db")
 
     // Delete expired sessions
     const result = await prisma.session.deleteMany({

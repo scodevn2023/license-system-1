@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { requireAdmin } from "@/lib/auth"
-import { prisma } from "@/lib/db"
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -13,6 +12,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     if (!email) {
       return NextResponse.json({ error: "Email là bắt buộc" }, { status: 400 })
     }
+
+    const { prisma } = await import("@/lib/db")
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({
@@ -67,6 +68,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     await requireAdmin()
 
     const userId = params.id
+
+    const { prisma } = await import("@/lib/db")
 
     // Check if user exists
     const existingUser = await prisma.user.findUnique({

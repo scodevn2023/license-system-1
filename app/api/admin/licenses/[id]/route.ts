@@ -1,6 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/auth"
-import { prisma } from "@/lib/db"
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -12,6 +11,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     if (!key || !type || !userId || !expirationDate) {
       return NextResponse.json({ error: "Thiếu thông tin bắt buộc" }, { status: 400 })
     }
+
+    const { prisma } = await import("@/lib/db")
 
     // Check if license exists
     const existingLicense = await prisma.license.findUnique({
@@ -80,6 +81,8 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     await requireAdmin()
 
     const licenseId = params.id
+
+    const { prisma } = await import("@/lib/db")
 
     // Check if license exists
     const existingLicense = await prisma.license.findUnique({
