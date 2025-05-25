@@ -1,0 +1,62 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String    @id @default(uuid())
+  email           String    @unique
+  password        String
+  name            String?
+  role            String    @default("USER") // ADMIN or USER
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  licenses        License[] @relation("UserLicenses")
+  createdLicenses License[] @relation("CreatedLicenses")
+  sessions        Session[]
+}
+
+model License {
+  id              String    @id @default(uuid())
+  key             String    @unique
+  type            String
+  status          String    @default("PENDING")
+  hardwareId      String?
+  activatedAt     DateTime?
+  lastValidatedAt DateTime?
+  expirationDate  DateTime
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  user            User      @relation("UserLicenses", fields: [userId], references: [id])
+  userId          String
+  creator         User      @relation("CreatedLicenses", fields: [creatorId], references: [id])
+  creatorId       String
+
+  @@index([userId])
+  @@index([creatorId])
+  @@index([key])
+  @@index([status])
+  @@index([hardwareId])
+  @@index([activatedAt])
+  @@index([lastValidatedAt])
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+} 

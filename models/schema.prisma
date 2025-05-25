@@ -1,0 +1,87 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relationships
+  licenses  License[]
+  sessions  Session[]
+}
+
+model License {
+  id          String    @id @default(uuid())
+  key         String    @unique // Serial key
+  type        LicenseType
+  status      LicenseStatus @default(UNACTIVATED)
+  createdAt   DateTime  @default(now())
+  activatedAt DateTime?
+  expiresAt   DateTime?
+  
+  // Relationships
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id])
+  instances   LicenseInstance[]
+}
+
+model LicenseInstance {
+  id          String   @id @default(uuid())
+  hardwareId  String   // HWID of the device
+  activatedAt DateTime @default(now())
+  status      InstanceStatus @default(ACTIVE)
+  
+  // Relationships
+  licenseId   String
+  license     License  @relation(fields: [licenseId], references: [id])
+
+  @@unique([licenseId, hardwareId])
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+  lastActive DateTime @default(now())
+  
+  // Relationships
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum LicenseType {
+  ONE_MONTH
+  ONE_YEAR
+}
+
+enum LicenseStatus {
+  UNACTIVATED
+  ACTIVE
+  EXPIRED
+  REVOKED
+}
+
+enum InstanceStatus {
+  ACTIVE
+  INACTIVE
+}

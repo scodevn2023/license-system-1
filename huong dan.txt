@@ -1,0 +1,158 @@
+HƯỚNG DẪN SỬ DỤNG CÔNG CỤ GỠ LỖI DÒNG LỆNH
+
+1. Cấu hình Terminal
+
+Xshell
+
+Tốc độ baud: 115200
+
+Bit dữ liệu: 8
+
+Bit dừng: 1
+
+Kiểm tra chẵn lẻ: None
+
+Điều khiển luồng: Không sử dụng
+
+Cài đặt giao diện: Sử dụng SHIFT, hiển thị màu sắc, sử dụng BACKSPACE
+
+SecureCRT
+
+Cổng COM: COM5
+
+Tốc độ baud: 115200
+
+Bit dữ liệu: 8
+
+Kiểm tra chẵn lẻ: None
+
+Bit dừng: 1
+
+Độ dài ngắt nối tiếp: 100 milliseconds
+
+Điều khiển luồng: DTR/DSR, RTS/CTS, XON/XOFF đều không chọn
+
+2. Công cụ paraGui
+
+Đường dẫn thực thi: ./paraGui
+
+Ví dụ tham số thực tế:
+
+para1: 380
+
+para2: -164
+
+para3: 17767
+
+para4: 6
+
+tick: 0
+
+set /5 0
+
+set /6 (không có giá trị)
+
+Hiển thị đồ thị: Hiển thị 4 tham số với màu khác nhau (Para1-xanh, Para2-đỏ, Para3-xanh lá, Para4-xanh dương)
+
+Tạo file dữ liệu: Đặt tên theo thời gian hiện tại, ví dụ 19-08-22-09_10_01.txt, 19-08-22-09_11_24.txt
+
+3. Ví dụ lệnh và tham số
+
+Lệnh info
+
+info -a: Hiển thị tất cả tham số
+
+Ví dụ: Hiển thị 10 tham số từ echoPara1 đến rightVel với MAX:10, MIN:5, Val:5 cho 4 tham số đầu; leftKp MAX:30000, MIN:0, Val:256
+
+info -c: Hiển thị tất cả lệnh
+
+Ví dụ: Danh sách lệnh gồm info, get, set, mon, save, add, mem, reset, ota, echo1, unecho, time, ...
+
+Lệnh get
+
+get /leftKp: Lấy giá trị tham số leftKp → leftKp :256
+
+get /7: Lấy giá trị tham số số 7 → leftKp :256
+
+Lệnh set
+
+set /leftKp 100: Đặt giá trị 100 cho leftKp
+
+set /7 100: Đặt tham số số 7 = 100
+
+set /leftKp 188: Đặt leftKp = 188 → Var modified success! và hiển thị leftKp :188
+
+set /7 32000: Ví dụ lỗi khi vượt quá giới hạn → out of range(0-30000)!
+
+Lệnh mon (giám sát)
+
+mon -f100 /5/6/7/8: Giám sát cố định các tham số 5,6,7,8 với khoảng thời gian 100ms → hiển thị leftVelSet:0, rightVelSet:0, leftKp:10000, leftKi:0
+
+mon -m100 /5/6/7/8: Giám sát cuộn các tham số 5,6,7,8 với khoảng thời gian 100ms → hiển thị nhiều dòng dữ liệu cuộn
+
+Lệnh save
+
+save -a: Lưu tất cả dữ liệu có thể ghi vào EEPROM/FLASH → Write e2prom success!
+
+Lệnh add và mem
+
+add /leftKp: Lấy địa chỉ bộ nhớ của leftKp → leftKp : 0X20000198
+
+mem /0x8000000 32: In 32 byte dữ liệu từ địa chỉ 0x8000000 → hiển thị dữ liệu dạng hex 78 8A 00 20 70 03 00 08 E9 2F 00 08 A1 2E 00 08...
+
+Lệnh time
+
+time -o: Hiển thị thời gian hiện tại → 2019/08/21 Wed 13:16:12
+
+time -t 13:17:40: Đặt thời gian hiện tại → 2019/8/21 Wed. 13:17:40 :success!
+
+time -d 2019/8/21: Đặt ngày tháng → 2019/8/21 Wed. 13:18:14 :success!
+
+time -cs 100: Hiển thị dấu thời gian theo định dạng SSSSS.ssss → hiển thị các dòng *Stamp--77101.5787, *Stamp--77101.6787...
+
+time -ch 100: Hiển thị dấu thời gian theo định dạng HH:MM:SS.ssss → hiển thị các dòng *Stamp--21:27:34.1547, *Stamp--21:27:34.2547...
+
+Lệnh state
+
+state -a: Hiển thị tất cả trạng thái → <1>:ready, <2>:caliVI, <3>:charge
+
+state -n: Hiển thị trạng thái hiện tại → --ready
+
+state /charge: Chuyển sang trạng thái charge → :success!
+
+Lệnh ver
+
+ver -g: Hiển thị phiên bản Git → --GitVer:f94d46acM
+
+ver -c: Hiển thị phiên bản Code → --CodeVer:0.4.0
+
+Lệnh yaw
+
+yaw -c: Đặt lại góc hướng hiện tại về 0 → :reset yaw success!
+
+Lệnh move (điều khiển chuyển động)
+
+move -vw 100 0: Di chuyển với tốc độ 100mm/s và góc quay 0deg/s → velocity(100mm/s) :angular rate(0.0deg/s) :success!
+
+move -vwd 100 0 1000: Di chuyển với tốc độ 100mm/s, góc quay 0deg/s, quãng đường 1000mm → Limited by distance(1000mm) :success!
+
+move -vwa 100 50 50: Di chuyển với tốc độ 100mm/s, góc quay 5.0deg/s, đến góc 5.0deg → Limited by angle(5.0deg) :success!
+
+move -vwt 100 0 1000: Di chuyển với tốc độ 100mm/s, góc quay 0deg/s, trong thời gian 1000ms → Limited by time(1000ms) :success!
+
+move -lr 50 50: Đặt tốc độ bánh trái và phải đều là 50mm/s → left wheel velocity(50mm/s) :right wheel velocity(50mm/s) :success!
+
+4. Cấu trúc dữ liệu echo1
+
+typedef struct{
+  uint16_t head;     //Đánh dấu đầu: 0XAAAA
+  uint16_t count;    //Bộ đếm: 0~65535 tăng dần
+  int16_t para1;     //Giá trị tham số echoPara1
+  int16_t para2;     //Giá trị tham số echoPara2
+  int16_t para3;     //Giá trị tham số echoPara3
+  int16_t para4;     //Giá trị tham số echoPara4
+}echo1_sTypeDef;
+
+5. Hình ảnh minh họa
+
+Các hình ảnh trong tài liệu cung cấp ví dụ thực tế về cách cấu hình và sử dụng các lệnh, giúp người dùng hiểu rõ cách thức hoạt động của hệ thống và các tham số cần thiết cho việc điều khiển thiết bị.
