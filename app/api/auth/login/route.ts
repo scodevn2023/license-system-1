@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { generateToken } from "@/lib/auth"
+import { prisma } from "@/lib/db"
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,9 +10,6 @@ export async function POST(request: NextRequest) {
     if (!email || !password) {
       return NextResponse.json({ error: "Email và password là bắt buộc" }, { status: 400 })
     }
-
-    // Import Prisma dynamically
-    const { prisma } = await import("@/lib/db")
 
     // Find user by email
     const user = await prisma.user.findUnique({
