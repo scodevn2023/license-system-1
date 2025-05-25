@@ -1,7 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import jwt, { verify } from 'jsonwebtoken';
 import { compare, hash } from 'bcrypt';
-import { prisma } from './prisma';
+import { prisma } from '../lib/prisma';
 import { GetServerSidePropsContext } from 'next';
 
 // Đảm bảo JWT_SECRET được cấu hình
@@ -18,24 +18,14 @@ export const generateToken = (userId: string): string => {
 
 // Mã hóa mật khẩu với bcrypt
 export const hashPassword = async (password: string): Promise<string> => {
-  console.log('=== Hash Password Debug ===');
-  console.log('Password length:', password.length);
-  
   const hashedPassword = await hash(password, 10);
-  console.log('Password hashed successfully');
-  
   return hashedPassword;
 };
 
 // Kiểm tra mật khẩu
 export const verifyPassword = async (plainPassword: string, hashedPassword: string): Promise<boolean> => {
-  console.log('=== Verify Password Debug ===');
-  console.log('Plain password length:', plainPassword.length);
-  console.log('Hashed password length:', hashedPassword.length);
-  
   try {
     const isValid = await compare(plainPassword, hashedPassword);
-    console.log('Password verification result:', isValid);
     return isValid;
   } catch (error) {
     console.error('Error verifying password:', error);
@@ -45,12 +35,8 @@ export const verifyPassword = async (plainPassword: string, hashedPassword: stri
 
 // Xác thực token
 export const verifyToken = async (token: string) => {
-  console.log('=== Verify Token Debug ===');
-  console.log('Token length:', token.length);
-  
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    console.log('Token verified successfully:', decoded);
     return decoded;
   } catch (error) {
     console.error('Token verification error:', error);
@@ -59,51 +45,41 @@ export const verifyToken = async (token: string) => {
 };
 
 // Xác thực user
-export async function authenticateUser(req: any) {
+export async function authenticateUser(req: NextApiRequest, res: NextApiResponse) {
   try {
-    console.log('=== Authenticate User Debug ===');
-    console.log('Headers:', req.headers);
-
-    // Parse cookies
+    // Parse cookies từ header
     const cookies = req.headers.cookie?.split(';').reduce((acc: any, cookie: string) => {
       const [key, value] = cookie.trim().split('=');
       acc[key] = value;
       return acc;
     }, {});
-    console.log('Parsed cookies:', cookies);
 
     const token = cookies?.token;
     if (!token) {
-      console.log('No token found');
       return null;
     }
 
-    console.log('Token found, verifying...');
-    const decoded = verify(token, JWT_SECRET);
-    console.log('Token verified successfully:', decoded);
-
-    if (!decoded || typeof decoded === 'string') {
-      console.log('Invalid token format');
+    // Verify token
+    const decoded = verify(token, JWT_SECRET) as { userId: string };
+    if (!decoded || !decoded.userId) {
       return null;
     }
 
-    console.log('Token verified, finding user...');
+    // Tìm user trong database
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       select: {
         id: true,
         email: true,
         name: true,
-        role: true
-      }
+        role: true,
+      },
     });
 
     if (!user) {
-      console.log('User not found for token');
       return null;
     }
 
-    console.log('User found:', user);
     return user;
   } catch (error) {
     console.error('Authentication error:', error);
@@ -111,30 +87,21 @@ export async function authenticateUser(req: any) {
   }
 }
 
-export const requireAuth = async (context: GetServerSidePropsContext) => {
-  const { req, res } = context;
-  const user = await authenticateUser(req);
-
+export const requireAuth = async (req: NextApiRequest, res: NextApiResponse) => {
+  const user = await authenticateUser(req, res);
+  
   if (!user) {
-    return {
-      redirect: {
-        destination: '/login',
-        permanent: false,
-      },
-    };
+    res.status(401).json({ error: 'Unauthorized' });
+    return null;
   }
 
-  return {
-    props: {
-      user,
-    },
-  };
+  return user;
 };
 
 // Middleware kiểm tra quyền admin
-export const requireAdmin = async (req: NextApiRequest, res: NextApiResponse) => {
-  const user = await authenticateUser(req);
-
+export async function requireAdmin(req: NextApiRequest, res: NextApiResponse) {
+  const user = await authenticateUser(req, res);
+  
   if (!user) {
     res.status(401).json({ error: 'Unauthorized' });
     return null;
@@ -146,15 +113,11 @@ export const requireAdmin = async (req: NextApiRequest, res: NextApiResponse) =>
   }
 
   return user;
-};
+}
 
 // Tạo session mới
 export const createSession = async (userId: string) => {
-  console.log('=== Create Session Debug ===');
-  console.log('User ID:', userId);
-  
   const token = jwt.sign({ userId }, JWT_SECRET, { expiresIn: '30d' });
-  console.log('Token generated');
   
   const session = await prisma.session.create({
     data: {
@@ -163,7 +126,6 @@ export const createSession = async (userId: string) => {
       expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
     },
   });
-  console.log('Session created in database');
   
   return session;
 };
