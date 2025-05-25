@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server"
-import { prisma } from "@/lib/db"
 import { requireAdmin } from "@/lib/auth"
 
 export async function POST() {
   try {
     await requireAdmin()
+
+    // Import Prisma dynamically to avoid build issues
+    const { prisma } = await import("@/lib/db")
 
     // Delete expired licenses
     const result = await prisma.license.deleteMany({
