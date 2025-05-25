@@ -1,13 +1,10 @@
 import { NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
 
 export async function GET() {
   try {
     await requireAdmin()
-
-    // Dynamic import of Prisma
-    const { PrismaClient } = await import("@prisma/client")
-    const prisma = new PrismaClient()
 
     try {
       const licenses = await prisma.license.findMany({
@@ -28,8 +25,9 @@ export async function GET() {
         success: true,
         licenses,
       })
-    } finally {
-      await prisma.$disconnect()
+    } catch (dbError) {
+      console.error("Database error:", dbError)
+      return NextResponse.json({ error: "Lỗi cơ sở dữ liệu" }, { status: 500 })
     }
   } catch (error) {
     console.error("Get licenses error:", error)

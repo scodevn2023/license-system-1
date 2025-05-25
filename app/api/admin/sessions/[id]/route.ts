@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
 
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -7,32 +8,24 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
 
     const sessionId = params.id
 
-    // Dynamic import of Prisma
-    const { PrismaClient } = await import("@prisma/client")
-    const prisma = new PrismaClient()
+    // Check if session exists
+    const existingSession = await prisma.session.findUnique({
+      where: { id: sessionId },
+    })
 
-    try {
-      // Check if session exists
-      const existingSession = await prisma.session.findUnique({
-        where: { id: sessionId },
-      })
-
-      if (!existingSession) {
-        return NextResponse.json({ error: "Session không tồn tại" }, { status: 404 })
-      }
-
-      // Delete session
-      await prisma.session.delete({
-        where: { id: sessionId },
-      })
-
-      return NextResponse.json({
-        success: true,
-        message: "Session đã được thu hồi thành công",
-      })
-    } finally {
-      await prisma.$disconnect()
+    if (!existingSession) {
+      return NextResponse.json({ error: "Session không tồn tại" }, { status: 404 })
     }
+
+    // Delete session
+    await prisma.session.delete({
+      where: { id: sessionId },
+    })
+
+    return NextResponse.json({
+      success: true,
+      message: "Session đã được thu hồi thành công",
+    })
   } catch (error) {
     console.error("Delete session error:", error)
     return NextResponse.json({ error: "Lỗi server" }, { status: 500 })

@@ -1,15 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getAuthUser } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
 
 export async function POST(request: NextRequest) {
   try {
     const user = await getAuthUser()
 
     if (user) {
-      // Dynamic import of Prisma
-      const { PrismaClient } = await import("@prisma/client")
-      const prisma = new PrismaClient()
-
       try {
         // Delete session from database
         const token = request.cookies.get("token")?.value
@@ -18,8 +15,9 @@ export async function POST(request: NextRequest) {
             where: { token },
           })
         }
-      } finally {
-        await prisma.$disconnect()
+      } catch (dbError) {
+        console.error("Database error during logout:", dbError)
+        // Continue with logout even if DB operation fails
       }
     }
 

@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { generateToken } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
 
 export async function POST(request: NextRequest) {
   try {
@@ -9,10 +10,6 @@ export async function POST(request: NextRequest) {
     if (!email || !password) {
       return NextResponse.json({ error: "Email và password là bắt buộc" }, { status: 400 })
     }
-
-    // Dynamic import of Prisma
-    const { PrismaClient } = await import("@prisma/client")
-    const prisma = new PrismaClient()
 
     try {
       // Find user by email
@@ -68,8 +65,9 @@ export async function POST(request: NextRequest) {
       })
 
       return response
-    } finally {
-      await prisma.$disconnect()
+    } catch (dbError) {
+      console.error("Database error:", dbError)
+      return NextResponse.json({ error: "Lỗi kết nối cơ sở dữ liệu" }, { status: 500 })
     }
   } catch (error) {
     console.error("Login error:", error)

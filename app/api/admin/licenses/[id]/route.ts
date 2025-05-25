@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -11,10 +12,6 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     if (!key || !type || !userId || !expirationDate) {
       return NextResponse.json({ error: "Thiếu thông tin bắt buộc" }, { status: 400 })
     }
-
-    // Dynamic import of Prisma
-    const { PrismaClient } = await import("@prisma/client")
-    const prisma = new PrismaClient()
 
     try {
       // Check if license exists
@@ -73,8 +70,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         success: true,
         license,
       })
-    } finally {
-      await prisma.$disconnect()
+    } catch (dbError) {
+      console.error("Database error:", dbError)
+      return NextResponse.json({ error: "Lỗi cơ sở dữ liệu" }, { status: 500 })
     }
   } catch (error) {
     console.error("Update license error:", error)
@@ -87,10 +85,6 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     await requireAdmin()
 
     const licenseId = params.id
-
-    // Dynamic import of Prisma
-    const { PrismaClient } = await import("@prisma/client")
-    const prisma = new PrismaClient()
 
     try {
       // Check if license exists
@@ -111,8 +105,9 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
         success: true,
         message: "License đã được xóa thành công",
       })
-    } finally {
-      await prisma.$disconnect()
+    } catch (dbError) {
+      console.error("Database error:", dbError)
+      return NextResponse.json({ error: "Lỗi cơ sở dữ liệu" }, { status: 500 })
     }
   } catch (error) {
     console.error("Delete license error:", error)

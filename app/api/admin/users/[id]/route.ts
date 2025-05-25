@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server"
 import bcrypt from "bcryptjs"
 import { requireAdmin } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -12,10 +13,6 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     if (!email) {
       return NextResponse.json({ error: "Email là bắt buộc" }, { status: 400 })
     }
-
-    // Dynamic import of Prisma
-    const { PrismaClient } = await import("@prisma/client")
-    const prisma = new PrismaClient()
 
     try {
       // Check if user exists
@@ -60,8 +57,9 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
         success: true,
         user: userWithoutPassword,
       })
-    } finally {
-      await prisma.$disconnect()
+    } catch (dbError) {
+      console.error("Database error:", dbError)
+      return NextResponse.json({ error: "Lỗi cơ sở dữ liệu" }, { status: 500 })
     }
   } catch (error) {
     console.error("Update user error:", error)
@@ -74,10 +72,6 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     await requireAdmin()
 
     const userId = params.id
-
-    // Dynamic import of Prisma
-    const { PrismaClient } = await import("@prisma/client")
-    const prisma = new PrismaClient()
 
     try {
       // Check if user exists
@@ -117,8 +111,9 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
         success: true,
         message: "User đã được xóa thành công",
       })
-    } finally {
-      await prisma.$disconnect()
+    } catch (dbError) {
+      console.error("Database error:", dbError)
+      return NextResponse.json({ error: "Lỗi cơ sở dữ liệu" }, { status: 500 })
     }
   } catch (error) {
     console.error("Delete user error:", error)

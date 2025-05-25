@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
 
 export async function POST(request: NextRequest) {
   try {
@@ -10,10 +11,6 @@ export async function POST(request: NextRequest) {
     if (!key || !type || !userId || !expirationDate) {
       return NextResponse.json({ error: "Thiếu thông tin bắt buộc" }, { status: 400 })
     }
-
-    // Dynamic import of Prisma
-    const { PrismaClient } = await import("@prisma/client")
-    const prisma = new PrismaClient()
 
     try {
       // Check if license key already exists
@@ -59,8 +56,9 @@ export async function POST(request: NextRequest) {
         success: true,
         license,
       })
-    } finally {
-      await prisma.$disconnect()
+    } catch (dbError) {
+      console.error("Database error:", dbError)
+      return NextResponse.json({ error: "Lỗi cơ sở dữ liệu" }, { status: 500 })
     }
   } catch (error) {
     console.error("Create license error:", error)
