@@ -21,9 +21,10 @@ import { useToast } from "@/hooks/use-toast"
 
 interface CreateUserDialogProps {
   children: React.ReactNode
+  onSuccess?: () => void
 }
 
-export function CreateUserDialog({ children }: CreateUserDialogProps) {
+export function CreateUserDialog({ children, onSuccess }: CreateUserDialogProps) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [email, setEmail] = useState("")
@@ -58,7 +59,11 @@ export function CreateUserDialog({ children }: CreateUserDialogProps) {
         setPassword("")
         setName("")
         setRole("USER")
-        router.refresh()
+        if (onSuccess) {
+          onSuccess()
+        } else {
+          router.refresh()
+        }
       } else {
         toast({
           title: "Lỗi",

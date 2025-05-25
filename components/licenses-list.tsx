@@ -40,9 +40,10 @@ interface User {
 interface LicensesListProps {
   licenses: License[]
   users: User[]
+  onUpdate?: () => void
 }
 
-export function LicensesList({ licenses, users }: LicensesListProps) {
+export function LicensesList({ licenses, users, onUpdate }: LicensesListProps) {
   const [selectedLicense, setSelectedLicense] = useState<License | null>(null)
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -139,8 +140,14 @@ export function LicensesList({ licenses, users }: LicensesListProps) {
             users={users}
             open={showEditDialog}
             onOpenChange={setShowEditDialog}
+            onSuccess={onUpdate}
           />
-          <DeleteLicenseDialog license={selectedLicense} open={showDeleteDialog} onOpenChange={setShowDeleteDialog} />
+          <DeleteLicenseDialog
+            license={selectedLicense}
+            open={showDeleteDialog}
+            onOpenChange={setShowDeleteDialog}
+            onSuccess={onUpdate}
+          />
         </>
       )}
     </>

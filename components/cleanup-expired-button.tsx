@@ -7,9 +7,10 @@ import { useToast } from "@/hooks/use-toast"
 
 interface CleanupExpiredButtonProps {
   children: React.ReactNode
+  onSuccess?: () => void
 }
 
-export function CleanupExpiredButton({ children }: CleanupExpiredButtonProps) {
+export function CleanupExpiredButton({ children, onSuccess }: CleanupExpiredButtonProps) {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
@@ -29,7 +30,11 @@ export function CleanupExpiredButton({ children }: CleanupExpiredButtonProps) {
           title: "Thành công",
           description: `Đã dọn dẹp ${data.deletedCount} license hết hạn`,
         })
-        router.refresh()
+        if (onSuccess) {
+          onSuccess()
+        } else {
+          router.refresh()
+        }
       } else {
         toast({
           title: "Lỗi",

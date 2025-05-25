@@ -9,9 +9,10 @@ interface RevokeSessionButtonProps {
   sessionId: string
   children: React.ReactNode
   disabled?: boolean
+  onSuccess?: () => void
 }
 
-export function RevokeSessionButton({ sessionId, children, disabled }: RevokeSessionButtonProps) {
+export function RevokeSessionButton({ sessionId, children, disabled, onSuccess }: RevokeSessionButtonProps) {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
@@ -33,7 +34,11 @@ export function RevokeSessionButton({ sessionId, children, disabled }: RevokeSes
           title: "Thành công",
           description: "Session đã được thu hồi",
         })
-        router.refresh()
+        if (onSuccess) {
+          onSuccess()
+        } else {
+          router.refresh()
+        }
       } else {
         toast({
           title: "Lỗi",

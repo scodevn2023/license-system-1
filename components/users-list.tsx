@@ -29,9 +29,10 @@ interface User {
 
 interface UsersListProps {
   users: User[]
+  onUpdate?: () => void
 }
 
-export function UsersList({ users }: UsersListProps) {
+export function UsersList({ users, onUpdate }: UsersListProps) {
   const [selectedUser, setSelectedUser] = useState<User | null>(null)
   const [showEditDialog, setShowEditDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -101,8 +102,18 @@ export function UsersList({ users }: UsersListProps) {
 
       {selectedUser && (
         <>
-          <EditUserDialog user={selectedUser} open={showEditDialog} onOpenChange={setShowEditDialog} />
-          <DeleteUserDialog user={selectedUser} open={showDeleteDialog} onOpenChange={setShowDeleteDialog} />
+          <EditUserDialog
+            user={selectedUser}
+            open={showEditDialog}
+            onOpenChange={setShowEditDialog}
+            onSuccess={onUpdate}
+          />
+          <DeleteUserDialog
+            user={selectedUser}
+            open={showDeleteDialog}
+            onOpenChange={setShowDeleteDialog}
+            onSuccess={onUpdate}
+          />
         </>
       )}
     </>

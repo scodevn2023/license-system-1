@@ -31,9 +31,10 @@ interface User {
 interface CreateLicenseDialogProps {
   children: React.ReactNode
   users: User[]
+  onSuccess?: () => void
 }
 
-export function CreateLicenseDialog({ children, users }: CreateLicenseDialogProps) {
+export function CreateLicenseDialog({ children, users, onSuccess }: CreateLicenseDialogProps) {
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
   const [key, setKey] = useState("")
@@ -80,7 +81,11 @@ export function CreateLicenseDialog({ children, users }: CreateLicenseDialogProp
         setUserId("")
         setExpirationDate("")
         setNotes("")
-        router.refresh()
+        if (onSuccess) {
+          onSuccess()
+        } else {
+          router.refresh()
+        }
       } else {
         toast({
           title: "Lỗi",
